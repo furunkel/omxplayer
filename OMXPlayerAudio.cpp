@@ -303,12 +303,12 @@ void OMXPlayerAudio::Process()
     }
     else if(!omx_pkt && !m_packets.empty())
     {
-      omx_pkt = m_packets.front();
-      m_cached_size -= omx_pkt->size;
-      m_packets.pop_front();
+        omx_pkt = m_packets.front();
+        m_cached_size -= omx_pkt->size;
+        m_packets.pop_front();
     }
     UnLock();
-    
+
     LockDecoder();
     if(m_flush && omx_pkt)
     {

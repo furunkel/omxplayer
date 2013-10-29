@@ -45,7 +45,7 @@ if test -z "$DBUS_SESSION_BUS_ADDRESS"; then
   eval $(dbus-launch --sh-syntax)
 fi
 
-$OMXPLAYER --font $FONT --italic-font $ITALIC_FONT "$@"
+$OMXPLAYER "$@"
 
 if [ -e $FBSET ]; then
   fbset -xres ${XRES} -yres ${YRES}

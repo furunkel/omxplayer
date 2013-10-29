@@ -27,6 +27,8 @@
 #include <sys/ioctl.h>
 #include <getopt.h>
 #include <string.h>
+#include <pthread.h>
+#include <array>
 
 #define AV_NOWARN_DEPRECATED
 
@@ -122,6 +124,8 @@ bool              m_has_subtitle        = false;
 float             m_display_aspect      = 0.0f;
 bool              m_boost_on_downmix    = false;
 bool              m_gen_log             = false;
+std::vector<uint8_t> m_sens_bytes;
+std::vector<FILE *> m_sens_files;
 
 enum{ERROR=-1,SUCCESS,ONEBYTE};
 
@@ -516,6 +520,34 @@ static void blank_background(bool enable)
   assert( ret == 0 );
 }
 
+void *sens_thread(void *data)
+{
+  while(true)
+  {
+    for(int i = 0; i < (int)m_sens_files.size(); i++)
+    {
+      FILE *f = m_sens_files[i];
+      std::size_t n;
+      std::array<char, 256> buffer;
+ 
+      std::fseek(f, 0L, SEEK_SET);
+      n = std::fread((void *)buffer.data(), sizeof(buffer[0]), (size_t)buffer.size(), f);
+
+      for(int j = 0; j < (int)n; j++)
+      {
+        if(buffer[j] >= '0' && buffer[j] <= '9')
+        {
+          m_sens_bytes[i] = buffer[j] - '0';
+          break;
+        }
+      }
+    }
+    usleep(1000);
+  }
+  return NULL;
+}
+
+
 int main(int argc, char *argv[])
 {
   signal(SIGSEGV, sig_handler);
@@ -527,6 +559,7 @@ int main(int argc, char *argv[])
   bool                  m_packet_after_seek   = false;
   bool                  m_seek_flush          = false;
   std::string           m_filename;
+  pthread_t m_sens_thread;
   double                m_incr                = 0;
   CRBP                  g_RBP;
   COMXCore              g_OMX;
@@ -545,6 +578,10 @@ int main(int argc, char *argv[])
   float m_threshold      = 0.2f; // amount of audio/video required to come out of buffering
   int m_orientation      = -1; // unset
   TV_DISPLAY_STATE_T   tv_state;
+
+  int m_sens_idx = -1;
+  int m_sens_idx_r = 0;
+  int m_sens_idx_l = 0;
 
   const int font_opt        = 0x100;
   const int italic_font_opt = 0x201;
@@ -780,12 +817,21 @@ int main(int argc, char *argv[])
     }
   }
 
+  
   if (optind >= argc) {
     print_usage();
     return 0;
   }
 
   m_filename = argv[optind];
+  
+  for(int i = optind + 1; i < argc; i++)
+  {
+    m_sens_files.push_back(std::fopen(argv[i], "r"));
+    m_sens_bytes.push_back(0);
+  }
+
+  pthread_create(&m_sens_thread, NULL, sens_thread, NULL);
 
   auto PrintFileNotFound = [](const std::string& path)
   {
@@ -1020,7 +1066,30 @@ int main(int argc, char *argv[])
     if (m_last_check_time == 0.0 || m_last_check_time + DVD_MSEC_TO_TIME(20) <= now) 
       update = true;
 
-     if (update) {
+    if (update)
+    {
+      if(m_sens_bytes.size() >= 2)
+      {
+        if(m_sens_bytes[0] > 0)
+        {
+          m_sens_idx_l = __builtin_ctz((unsigned int) m_sens_bytes[0]);
+        }
+
+        if(m_sens_bytes[1] > 0)
+        {
+          m_sens_idx_r = __builtin_ctz((unsigned int) m_sens_bytes[1]);
+        }
+
+        int sens_idx = m_sens_idx_l * 3 + m_sens_idx_r;
+        if(sens_idx != m_sens_idx)
+        {
+          m_sens_idx = sens_idx;
+          fprintf(stderr, "Sensor: change audio stream index to %d (left:%d - right:%d).\n",
+                           m_sens_idx, m_sens_idx_l, m_sens_idx_r);
+          m_omx_reader.SetActiveStream(OMXSTREAM_AUDIO, m_sens_idx);
+        }
+      }
+
     switch(m_omxcontrol.getEvent())
     {
       case KeyConfig::ACTION_SHOW_INFO:
