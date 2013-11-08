@@ -1146,16 +1146,13 @@ int main(int argc, char *argv[])
             char str[255];
             v = 255 - (1 << (m_sens_idx_l + 5));
             n = snprintf(str, sizeof(str), "%d\n", v);
-            fprintf(stderr, "writing <%s>\n", str);
 	    fwrite(str, sizeof(char), n, m_io_out_files[0]);
 	    std::fflush(m_io_out_files[0]);
 
             v = 255 - (1 << (m_sens_idx_r + 5));
             n = snprintf(str, sizeof(str), "%d\n", v);
-            fprintf(stderr, "writing <%s>\n", str);
 	    fwrite(str, sizeof(char), n, m_io_out_files[1]);
 	    std::fflush(m_io_out_files[1]);
-            fprintf(stderr, "----------------\n");
           }
 
           m_sens_idx = sens_idx;
