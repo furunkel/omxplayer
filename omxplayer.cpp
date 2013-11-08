@@ -125,6 +125,7 @@ bool              m_boost_on_downmix    = true;
 bool              m_gen_log             = false;
 std::vector<uint8_t> m_sens_bytes;
 std::vector<FILE *> m_sens_files;
+std::vector<FILE *> m_io_out_files;
 
 enum{ERROR=-1,SUCCESS,ONEBYTE};
 
@@ -530,19 +531,23 @@ void *sens_thread(void *data)
     {
       FILE *f = m_sens_files[i];
       std::size_t n;
-      std::array<char, 256> buffer;
+      char buffer[265];
  
       std::fseek(f, 0L, SEEK_SET);
-      n = std::fread((void *)buffer.data(), sizeof(buffer[0]), (size_t)buffer.size(), f);
+      n = std::fread((void *)buffer, sizeof(buffer[0]), (size_t)256, f);
 
-      for(int j = 0; j < (int)n; j++)
+      int v;
+      sscanf(buffer, " %d", &v);
+      m_sens_bytes[i] = (uint8_t) v;
+
+      /*for(int j = 0; j < (int)n; j++)
       {
         if(buffer[j] >= '0' && buffer[j] <= '9')
         {
           m_sens_bytes[i] = buffer[j] - '0';
           break;
         }
-      }
+      } */
     }
     usleep(1000);
   }
@@ -860,10 +865,24 @@ int main(int argc, char *argv[])
 
   m_filename = argv[optind];
   
+  int sens_files_i;
   for(int i = optind + 1; i < argc; i++)
   {
+    sens_files_i = i;
+    if(argv[i][0] == '!') break;
     m_sens_files.push_back(std::fopen(argv[i], "r"));
     m_sens_bytes.push_back(0);
+  }
+
+  for(int i = sens_files_i + 1; i < argc; i++)
+  {
+    FILE *f;
+    char v[] = "255\n";
+    f = std::fopen(argv[i], "w");
+    std::fwrite(v, sizeof(char), sizeof(v), f);
+    std::fflush(f);
+    fprintf(stderr, "Resetting %s\n", argv[i]);
+    m_io_out_files.push_back(f);
   }
 
   pthread_create(&m_sens_thread, NULL, sens_thread, NULL);
@@ -1102,29 +1121,57 @@ int main(int argc, char *argv[])
       m_last_check_time = now;
     }
 
-    if (update)
-    {
       if(m_sens_bytes.size() >= 2)
       {
-        if(m_sens_bytes[0] > 0)
+	char b0 = m_sens_bytes[0];
+	char b1 = m_sens_bytes[1];
+
+        if((b0 & 0x0F) > 0)
         {
-          m_sens_idx_l = __builtin_ctz((unsigned int) m_sens_bytes[0]);
+          m_sens_idx_l = __builtin_ctz((unsigned int)(b0 & 0x0F));
         }
 
-        if(m_sens_bytes[1] > 0)
+        if((b1 & 0x0F) > 0)
         {
-          m_sens_idx_r = __builtin_ctz((unsigned int) m_sens_bytes[1]);
+          m_sens_idx_r = __builtin_ctz((unsigned int)(b1 & 0x0F));
         }
 
-        int sens_idx = m_sens_idx_l * 3 + m_sens_idx_r;
+        int sens_idx = (m_sens_idx_l * 3 + m_sens_idx_r);
         if(sens_idx != m_sens_idx)
         {
+          if(m_io_out_files.size() >= 2)
+          {
+            char v;
+            int n;
+            char str[255];
+            v = 255 - (1 << (m_sens_idx_l + 5));
+            n = snprintf(str, sizeof(str), "%d\n", v);
+            fprintf(stderr, "writing <%s>\n", str);
+	    fwrite(str, sizeof(char), n, m_io_out_files[0]);
+	    std::fflush(m_io_out_files[0]);
+
+            v = 255 - (1 << (m_sens_idx_r + 5));
+            n = snprintf(str, sizeof(str), "%d\n", v);
+            fprintf(stderr, "writing <%s>\n", str);
+	    fwrite(str, sizeof(char), n, m_io_out_files[1]);
+	    std::fflush(m_io_out_files[1]);
+            fprintf(stderr, "----------------\n");
+          }
+
           m_sens_idx = sens_idx;
           fprintf(stderr, "Sensor: change audio stream index to %d (left:%d - right:%d).\n",
                            m_sens_idx, m_sens_idx_l, m_sens_idx_r);
           m_omx_reader.SetActiveStream(OMXSTREAM_AUDIO, m_sens_idx);
         }
       }
+
+
+
+
+
+
+    if (update)
+    {
 
     switch(m_omxcontrol.getEvent())
     {
