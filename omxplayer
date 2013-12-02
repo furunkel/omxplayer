@@ -2,32 +2,28 @@
 
 #mount -t nfs -o rsize=32768,wsize=32768,intr 192.168.10.1:/data/video /media
 
-OMXPLAYER="./omxplayer.bin"
+DIR="$(dirname "$0")"
+OMXPLAYER="$DIR/omxplayer.bin"
+echo "$OMXPLAYER"
 FBSET="/usr/sbin/fbset"
-FONT="fonts/FreeSans.ttf"
+FONT="$DIR/fonts/FreeSans.ttf"
 
 if [ -e /usr/share/fonts/truetype/freefont/FreeSans.ttf ]; then
   FONT="/usr/share/fonts/truetype/freefont/FreeSans.ttf"
 else
-  FONT="fonts/FreeSans.ttf"
+  FONT="$DIR/fonts/FreeSans.ttf"
 fi
 
 if [ -e /usr/share/fonts/truetype/freefont/FreeSansOblique.ttf ]; then
   ITALIC_FONT="/usr/share/fonts/truetype/freefont/FreeSansOblique.ttf"
 else
-  ITALIC_FONT="fonts/FreeSansOblique.ttf"
-fi
-
-if [ -e /usr/bin/omxplayer.bin ]; then
-  OMXPLAYER="/usr/bin/omxplayer.bin"
-else
-  OMXPLAYER="./omxplayer.bin"
+  ITALIC_FONT="$DIR/fonts/FreeSansOblique.ttf"
 fi
 
 if [ -e /usr/lib/omxplayer ]; then
   export LD_LIBRARY_PATH=/opt/vc/lib:/usr/lib/omxplayer:$LD_LIBRARY_PATH
 else
-  export LD_LIBRARY_PATH=$PWD/ffmpeg_compiled/usr/local/lib:/opt/vc/lib:$LD_LIBRARY_PATH
+  export LD_LIBRARY_PATH="$DIR/ffmpeg_compiled/usr/local/lib:/opt/vc/lib:$LD_LIBRARY_PATH"
 fi
 
 XRES=1920

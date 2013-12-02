@@ -865,8 +865,8 @@ int main(int argc, char *argv[])
 
   m_filename = argv[optind];
   
-  int sens_files_i;
-  for(int i = optind + 1; i < argc; i++)
+  int sens_files_i = optind + 1;
+  for(int i = sens_files_i; i < argc; i++)
   {
     sens_files_i = i;
     if(argv[i][0] == '!') break;
@@ -877,7 +877,7 @@ int main(int argc, char *argv[])
   for(int i = sens_files_i + 1; i < argc; i++)
   {
     FILE *f;
-    char v[] = "255\n";
+    char v[] = "224\n";
     f = std::fopen(argv[i], "w");
     std::fwrite(v, sizeof(char), sizeof(v), f);
     std::fflush(f);
@@ -1126,14 +1126,14 @@ int main(int argc, char *argv[])
 	char b0 = m_sens_bytes[0];
 	char b1 = m_sens_bytes[1];
 
-        if((b0 & 0x0F) > 0)
+        if((b0 & 0x07) > 0)
         {
-          m_sens_idx_l = __builtin_ctz((unsigned int)(b0 & 0x0F));
+          m_sens_idx_l = __builtin_ctz((unsigned int)(b0 & 0x07));
         }
 
-        if((b1 & 0x0F) > 0)
+        if((b1 & 0x07) > 0)
         {
-          m_sens_idx_r = __builtin_ctz((unsigned int)(b1 & 0x0F));
+          m_sens_idx_r = __builtin_ctz((unsigned int)(b1 & 0x07));
         }
 
         int sens_idx = (m_sens_idx_l * 3 + m_sens_idx_r);
@@ -1144,12 +1144,12 @@ int main(int argc, char *argv[])
             char v;
             int n;
             char str[255];
-            v = 255 - (1 << (m_sens_idx_l + 5));
+            v = 224 - (1 << (m_sens_idx_l + 5));
             n = snprintf(str, sizeof(str), "%d\n", v);
 	    fwrite(str, sizeof(char), n, m_io_out_files[0]);
 	    std::fflush(m_io_out_files[0]);
 
-            v = 255 - (1 << (m_sens_idx_r + 5));
+            v = 224 - (1 << (m_sens_idx_r + 5));
             n = snprintf(str, sizeof(str), "%d\n", v);
 	    fwrite(str, sizeof(char), n, m_io_out_files[1]);
 	    std::fflush(m_io_out_files[1]);
