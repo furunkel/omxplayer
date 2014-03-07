@@ -737,6 +737,8 @@ int main(int argc, char *argv[])
         m_audio_index_use = atoi(optarg) - 1;
         if(m_audio_index_use < 0)
           m_audio_index_use = 0;
+        m_sens_idx_l = m_audio_index_use;
+        m_sens_idx_r = m_audio_index_use;
         break;
       case 'l':
         m_incr = atof(optarg) ;
