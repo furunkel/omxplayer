@@ -3,13 +3,13 @@
 echo "Patching makefiles..."
 echo "FLOAT=hard
 
-CFLAGS +=  -mfloat-abi=hard -mcpu=arm1176jzf-s -fomit-frame-pointer -mabi=aapcs-linux -mtune=arm1176jzf-s -mfpu=vfp -Wno-psabi -mno-apcs-stack-check -O3 -mstructure-size-boundary=32 -mno-sched-prolog -march=armv6zk
+CFLAGS +=  -mfloat-abi=hard -mcpu=arm1176jzf-s -fomit-frame-pointer -mabi=aapcs-linux -mtune=arm1176jzf-s -mfpu=vfp -Wno-psabi -mno-apcs-stack-check -O3 -mstructure-size-boundary=32 -mno-sched-prolog -march=armv6zk `pkg-config dbus-1 --cflags`
 
 BUILDROOT	:=/usr/local/src/omxplayer
 TOOLCHAIN	:=/usr/
 LD			:= \$(TOOLCHAIN)/bin/ld
-CC			:= \$(TOOLCHAIN)/bin/gcc 
-CXX       	:= \$(TOOLCHAIN)/bin/g++
+CC			:= \$(TOOLCHAIN)/bin/gcc-4.7
+CXX       	:= \$(TOOLCHAIN)/bin/g++-4.7
 OBJDUMP		:= \$(TOOLCHAIN)/bin/objdump
 RANLIB		:= \$(TOOLCHAIN)/bin/ranlib
 STRIP		:= \$(TOOLCHAIN)/bin/strip
@@ -20,6 +20,8 @@ LDFLAGS		+= -L/opt/vc/lib -L/lib -L/usr/lib -lfreetype
 INCLUDES	+= -I/opt/vc/include/interface/vcos/pthreads \
 			-I/opt/vc/include \
 			-I/opt/vc/include/interface/vmcs_host \
+			-I/opt/vc/include/interface/vmcs_host/linux \
+			-I/usr/lib/arm-linux-gnueabihf/dbus-1.0/include \
 			-I/usr/include \
 			-I/usr/include/freetype2" > Makefile.include
 
@@ -38,9 +40,8 @@ install: dist
 
 echo "Installing packages..."
 sudo apt-get update
-sudo apt-get -y install ca-certificates git-core subversion binutils libva1 libpcre3-dev libidn11-dev libboost1.50-dev libfreetype6-dev libusb-1.0-0-dev
+sudo apt-get -y install ca-certificates git-core subversion binutils libva1 libpcre3-dev libidn11-dev libboost1.50-dev libfreetype6-dev libusb-1.0-0-dev libdbus-1-dev libssl-dev
 sudo apt-get -y install gcc-4.7 g++-4.7
-pushd /usr/bin && sudo rm gcc && sudo ln -s gcc-4.7 gcc && sudo rm g++ && sudo ln -s g++-4.7 g++ && popd
 
 
 echo "Installing the rpi-update script..."

@@ -41,6 +41,7 @@
 #include "OMXOverlayCodecText.h"
 
 #include <string>
+#include <atomic>
 
 using namespace std;
 
@@ -74,6 +75,7 @@ protected:
   bool                      m_bAbort;
   bool                      m_use_thread;
   bool                      m_flush;
+  std::atomic<bool>         m_flush_requested;
   unsigned int              m_cached_size;
   unsigned int              m_max_data_size;
   float                     m_fifo_size;
@@ -82,6 +84,7 @@ protected:
   double                    m_iSubtitleDelay;
   COMXOverlayCodec          *m_pSubtitleCodec;
   uint32_t                  m_history_valid_pts;
+  int                       m_layer;
 
   void Lock();
   void UnLock();
@@ -94,7 +97,7 @@ public:
   OMXPlayerVideo();
   ~OMXPlayerVideo();
   bool Open(COMXStreamInfo &hints, OMXClock *av_clock, const CRect& DestRect, EDEINTERLACEMODE deinterlace, bool hdmi_clock_sync, bool use_thread,
-                   float display_aspect, float queue_size, float fifo_size);
+                   float display_aspect, int layer, float queue_size, float fifo_size);
   bool Close();
   bool Decode(OMXPacket *pkt);
   void Process();

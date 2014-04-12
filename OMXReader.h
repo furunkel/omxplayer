@@ -130,7 +130,7 @@ private:
 public:
   OMXReader();
   ~OMXReader();
-  bool Open(std::string filename, bool dump_format, bool live = false);
+  bool Open(std::string filename, bool dump_format, bool live = false, float timeout = 0.0f);
   void ClearStreams();
   bool Close();
   //void FlushRead();
@@ -162,13 +162,14 @@ public:
   bool SeekChapter(int chapter, double* startpts);
   int GetAudioIndex() { return (m_audio_index >= 0) ? m_streams[m_audio_index].index : -1; };
   int GetSubtitleIndex() { return (m_subtitle_index >= 0) ? m_streams[m_subtitle_index].index : -1; };
-  
+  int GetVideoIndex() { return (m_video_index >= 0) ? m_streams[m_video_index].index : -1; };
+
   int GetRelativeIndex(size_t index)
   {
     assert(index < MAX_STREAMS);
     return m_streams[index].index;
   }
-  
+
   int GetStreamLength();
   static double NormalizeFrameduration(double frameduration);
   bool IsMatroska() { return m_bMatroska; };
